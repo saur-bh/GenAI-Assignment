@@ -1,0 +1,555 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>10 Sample Logic Questions (Matrix)</title>
+    <style>
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        margin: 24px;
+        color: #111;
+        background: #fff;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 20px;
+      }
+      .meta {
+        margin: 0 0 18px;
+        color: #4b5563;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+      .grid {
+        display: grid;
+        gap: 14px;
+        max-width: 980px;
+      }
+      .card {
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 800;
+      }
+      .prompt {
+        margin: 0;
+        color: #374151;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+      .matrix {
+        display: grid;
+        grid-template-columns: repeat(3, 112px);
+        grid-template-rows: repeat(3, 112px);
+        gap: 10px;
+        margin-top: 8px;
+      }
+      .cell {
+        border: 2px solid #111827;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: #fff;
+      }
+      .missing {
+        font-size: 28px;
+        font-weight: 900;
+        letter-spacing: 1px;
+      }
+      .options {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .opt {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 10px;
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 10px;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+      }
+      .opt:hover {
+        background: #f9fafb;
+      }
+      .optLetter {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        font-weight: 900;
+        background: #111827;
+        color: #fff;
+      }
+      .selected {
+        outline: 3px solid #6366f1;
+        background: #eef2ff;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+      }
+      button {
+        border: 0;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .btnPrimary {
+        background: #111827;
+        color: #fff;
+      }
+      .btnSecondary {
+        background: #eef2ff;
+        color: #1f2a60;
+      }
+      .result {
+        display: none;
+        border-radius: 12px;
+        padding: 12px;
+        background: #f3f4f6;
+        line-height: 1.35;
+        font-size: 13px;
+      }
+      .result strong {
+        display: inline-block;
+        margin-bottom: 4px;
+      }
+      @media (max-width: 860px) {
+        .options {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 520px) {
+        .matrix {
+          grid-template-columns: repeat(3, 96px);
+          grid-template-rows: repeat(3, 96px);
+        }
+        .options {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>10 Sample Logic Questions</h1>
+    <p class="meta">
+      Each question is a 3×3 matrix with one missing tile (?). Choose the option (A–F) that completes the pattern.
+    </p>
+
+    <div class="grid" id="quiz"></div>
+
+    <script>
+      function tileSVG(d) {
+        const data = d || {};
+        const s = data.s ?? 0;
+        const t = data.t ?? 0;
+        const c = data.c ?? 0;
+        const r = data.r ?? null;
+        const dot = data.dot ?? null;
+
+        const w = 90, h = 90;
+
+        const leftX = 18, midX = 45, rightX = 72;
+        const yStart = 22, yGap = 18;
+
+        const sq = (x, y) =>
+          `<rect x="${x - 7}" y="${y - 7}" width="14" height="14" rx="2" fill="#111827"></rect>`;
+
+        const tri = (x, y) => {
+          const p1 = `${x},${y - 8}`;
+          const p2 = `${x - 8},${y + 7}`;
+          const p3 = `${x + 8},${y + 7}`;
+          return `<polygon points="${p1} ${p2} ${p3}" fill="#111827"></polygon>`;
+        };
+
+        const cir = (x, y) => `<circle cx="${x}" cy="${y}" r="7" fill="#111827"></circle>`;
+
+        const dotMap = {
+          tl: { x: 12, y: 12 },
+          tr: { x: 78, y: 12 },
+          bl: { x: 12, y: 78 },
+          br: { x: 78, y: 78 }
+        };
+
+        let shapes = "";
+        for (let i = 0; i < s; i++) shapes += sq(leftX, yStart + i * yGap);
+        for (let i = 0; i < c; i++) shapes += cir(midX, yStart + i * yGap);
+        for (let i = 0; i < t; i++) shapes += tri(rightX, yStart + i * yGap);
+
+        let bar = "";
+        if (r !== null && Number.isFinite(r)) {
+          bar = `
+            <g transform="translate(${midX} ${midX}) rotate(${r}) translate(${-midX} ${-midX})">
+              <rect x="${midX - 22}" y="${midX - 4}" width="44" height="8" rx="4" fill="#111827"></rect>
+              <polygon points="${midX + 24},${midX} ${midX + 14},${midX - 10} ${midX + 14},${midX + 10}" fill="#111827"></polygon>
+            </g>
+          `;
+        }
+
+        let cornerDot = "";
+        if (dot && dotMap[dot]) {
+          const p = dotMap[dot];
+          cornerDot = `<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="#111827"></circle>`;
+        }
+
+        return `
+          <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-label="tile">
+            <rect x="1" y="1" width="${w - 2}" height="${h - 2}" rx="12" fill="#ffffff"></rect>
+            ${cornerDot}
+            ${bar}
+            ${shapes}
+          </svg>
+        `;
+      }
+
+      function buildMatrix(container, matrix) {
+        const matrixEl = document.createElement("div");
+        matrixEl.className = "matrix";
+
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < 3; c++) {
+            const cell = document.createElement("div");
+            cell.className = "cell";
+
+            const data = matrix[r][c];
+            if (data === null) {
+              const span = document.createElement("div");
+              span.className = "missing";
+              span.textContent = "?";
+              cell.appendChild(span);
+            } else {
+              cell.innerHTML = tileSVG(data);
+            }
+
+            matrixEl.appendChild(cell);
+          }
+        }
+
+        container.appendChild(matrixEl);
+      }
+
+      function buildOptions(container, qIndex, options) {
+        const optionsEl = document.createElement("div");
+        optionsEl.className = "options";
+        optionsEl.dataset.q = String(qIndex);
+
+        options.forEach((o) => {
+          const opt = document.createElement("div");
+          opt.className = "opt";
+          opt.dataset.letter = o.letter;
+
+          const badge = document.createElement("div");
+          badge.className = "optLetter";
+          badge.textContent = o.letter;
+
+          const content = document.createElement("div");
+          content.innerHTML = tileSVG(o.data);
+
+          opt.appendChild(badge);
+          opt.appendChild(content);
+
+          opt.addEventListener("click", () => {
+            Array.from(optionsEl.children).forEach((n) => n.classList.remove("selected"));
+            opt.classList.add("selected");
+            window.__answers[qIndex] = o.letter;
+
+            const result = document.getElementById(`result-${qIndex}`);
+            result.style.display = "none";
+          });
+
+          optionsEl.appendChild(opt);
+        });
+
+        container.appendChild(optionsEl);
+      }
+
+      const questions = [
+        {
+          title: "Q1",
+          prompt: "Rule: rows add squares, columns add triangles. What replaces ?",
+          matrix: [
+            [{ s: 0, t: 0 }, { s: 0, t: 1 }, { s: 0, t: 2 }],
+            [{ s: 1, t: 0 }, { s: 1, t: 1 }, { s: 1, t: 2 }],
+            [{ s: 2, t: 0 }, { s: 2, t: 1 }, null]
+          ],
+          options: [
+            { letter: "A", data: { s: 2, t: 1 } },
+            { letter: "B", data: { s: 1, t: 2 } },
+            { letter: "C", data: { s: 3, t: 2 } },
+            { letter: "D", data: { s: 2, t: 0 } },
+            { letter: "E", data: { s: 2, t: 2 } },
+            { letter: "F", data: { s: 1, t: 1 } }
+          ],
+          correct: "E",
+          explanation: "Bottom-right is row 3 (2 squares) and column 3 (2 triangles) → 2 squares + 2 triangles."
+        },
+        {
+          title: "Q2",
+          prompt: "Rule: columns add squares, rows add circles. What replaces ?",
+          matrix: [
+            [{ s: 0, c: 0 }, { s: 1, c: 0 }, { s: 2, c: 0 }],
+            [{ s: 0, c: 1 }, { s: 1, c: 1 }, { s: 2, c: 1 }],
+            [{ s: 0, c: 2 }, { s: 1, c: 2 }, null]
+          ],
+          options: [
+            { letter: "A", data: { s: 2, c: 2 } },
+            { letter: "B", data: { s: 1, c: 2 } },
+            { letter: "C", data: { s: 2, c: 1 } },
+            { letter: "D", data: { s: 0, c: 2 } },
+            { letter: "E", data: { s: 2, c: 0 } },
+            { letter: "F", data: { s: 3, c: 2 } }
+          ],
+          correct: "A",
+          explanation: "Bottom-right is column 3 → 2 squares, row 3 → 2 circles."
+        },
+        {
+          title: "Q3",
+          prompt: "Rule: rows add squares, columns reduce triangles (2 → 1 → 0). What replaces ?",
+          matrix: [
+            [{ s: 0, t: 2 }, { s: 0, t: 1 }, { s: 0, t: 0 }],
+            [{ s: 1, t: 2 }, { s: 1, t: 1 }, { s: 1, t: 0 }],
+            [{ s: 2, t: 2 }, { s: 2, t: 1 }, null]
+          ],
+          options: [
+            { letter: "A", data: { s: 2, t: 2 } },
+            { letter: "B", data: { s: 2, t: 0 } },
+            { letter: "C", data: { s: 1, t: 0 } },
+            { letter: "D", data: { s: 3, t: 0 } },
+            { letter: "E", data: { s: 2, t: 1 } },
+            { letter: "F", data: { s: 0, t: 0 } }
+          ],
+          correct: "B",
+          explanation: "Bottom row needs 2 squares; last column needs 0 triangles."
+        },
+        {
+          title: "Q4",
+          prompt: "Rule: in each row and column, the 3rd tile = (1st + 2nd) by count (squares/triangles/circles). What replaces ?",
+          matrix: [
+            [{ s: 1, t: 0, c: 0 }, { s: 0, t: 1, c: 0 }, { s: 1, t: 1, c: 0 }],
+            [{ s: 1, t: 1, c: 0 }, { s: 1, t: 0, c: 1 }, { s: 2, t: 1, c: 1 }],
+            [{ s: 2, t: 1, c: 0 }, { s: 1, t: 1, c: 1 }, null]
+          ],
+          options: [
+            { letter: "A", data: { s: 3, t: 2, c: 1 } },
+            { letter: "B", data: { s: 2, t: 2, c: 1 } },
+            { letter: "C", data: { s: 3, t: 1, c: 1 } },
+            { letter: "D", data: { s: 3, t: 2, c: 0 } },
+            { letter: "E", data: { s: 2, t: 1, c: 1 } },
+            { letter: "F", data: { s: 1, t: 2, c: 1 } }
+          ],
+          correct: "A",
+          explanation: "Bottom-right = top-right + middle-right → (1,1,0) + (2,1,1) = (3,2,1)."
+        },
+        {
+          title: "Q5",
+          prompt: "Rule: arrow rotation increases by 90° across rows AND down columns. What replaces ?",
+          matrix: [
+            [{ r: 0 }, { r: 90 }, { r: 180 }],
+            [{ r: 90 }, { r: 180 }, { r: 270 }],
+            [{ r: 180 }, { r: 270 }, null]
+          ],
+          options: [
+            { letter: "A", data: { r: 90 } },
+            { letter: "B", data: { r: 180 } },
+            { letter: "C", data: { r: 270 } },
+            { letter: "D", data: { r: 0 } },
+            { letter: "E", data: { r: 45 } },
+            { letter: "F", data: { r: 135 } }
+          ],
+          correct: "D",
+          explanation: "Sequence wraps: 180 → 270 → 0."
+        },
+        {
+          title: "Q6",
+          prompt: "Rule: corner dot cycles TL → TR → BR → BL across rows and columns. What replaces ?",
+          matrix: [
+            [{ dot: "tl" }, { dot: "tr" }, { dot: "br" }],
+            [{ dot: "tr" }, { dot: "br" }, { dot: "bl" }],
+            [{ dot: "br" }, { dot: "bl" }, null]
+          ],
+          options: [
+            { letter: "A", data: { dot: "tr" } },
+            { letter: "B", data: { dot: "bl" } },
+            { letter: "C", data: { dot: "br" } },
+            { letter: "D", data: { dot: "tl" } },
+            { letter: "E", data: { dot: "tl", s: 1 } },
+            { letter: "F", data: { dot: "tr", t: 1 } }
+          ],
+          correct: "D",
+          explanation: "After BL the cycle returns to TL."
+        },
+        {
+          title: "Q7",
+          prompt: "Rule: triangles increase by column (0,1,2). Squares alternate like a checkerboard (0/1). What replaces ?",
+          matrix: [
+            [{ s: 0, t: 0 }, { s: 1, t: 1 }, { s: 0, t: 2 }],
+            [{ s: 1, t: 0 }, { s: 0, t: 1 }, { s: 1, t: 2 }],
+            [{ s: 0, t: 0 }, { s: 1, t: 1 }, null]
+          ],
+          options: [
+            { letter: "A", data: { s: 0, t: 2 } },
+            { letter: "B", data: { s: 1, t: 2 } },
+            { letter: "C", data: { s: 0, t: 1 } },
+            { letter: "D", data: { s: 1, t: 1 } },
+            { letter: "E", data: { s: 0, t: 0 } },
+            { letter: "F", data: { s: 2, t: 2 } }
+          ],
+          correct: "A",
+          explanation: "Bottom-right must match checkerboard squares (0) and column 3 triangles (2)."
+        },
+        {
+          title: "Q8",
+          prompt: "Rule: circles increase by column (0,1,2). Squares decrease by row (2,1,0). What replaces ?",
+          matrix: [
+            [{ s: 2, c: 0 }, { s: 2, c: 1 }, { s: 2, c: 2 }],
+            [{ s: 1, c: 0 }, { s: 1, c: 1 }, { s: 1, c: 2 }],
+            [{ s: 0, c: 0 }, { s: 0, c: 1 }, null]
+          ],
+          options: [
+            { letter: "A", data: { s: 0, c: 2 } },
+            { letter: "B", data: { s: 1, c: 2 } },
+            { letter: "C", data: { s: 2, c: 2 } },
+            { letter: "D", data: { s: 0, c: 1 } },
+            { letter: "E", data: { s: 0, c: 0 } },
+            { letter: "F", data: { s: 3, c: 2 } }
+          ],
+          correct: "A",
+          explanation: "Bottom row needs 0 squares; last column needs 2 circles."
+        },
+        {
+          title: "Q9",
+          prompt: "Rule: squares increase by column (0,1,2). triangles increase by row (0,1,2). What replaces ?",
+          matrix: [
+            [{ s: 0, t: 0 }, { s: 1, t: 0 }, { s: 2, t: 0 }],
+            [{ s: 0, t: 1 }, { s: 1, t: 1 }, { s: 2, t: 1 }],
+            [{ s: 0, t: 2 }, { s: 1, t: 2 }, null]
+          ],
+          options: [
+            { letter: "A", data: { s: 2, t: 2 } },
+            { letter: "B", data: { s: 1, t: 2 } },
+            { letter: "C", data: { s: 2, t: 1 } },
+            { letter: "D", data: { s: 0, t: 2 } },
+            { letter: "E", data: { s: 3, t: 2 } },
+            { letter: "F", data: { s: 2, t: 3 } }
+          ],
+          correct: "A",
+          explanation: "Bottom-right is column 3 squares (2) and row 3 triangles (2)."
+        },
+        {
+          title: "Q10",
+          prompt: "Rule: circles and triangles increase by row (0,1,2). Arrow rotation increases by column (0°,90°,180°). Squares stay 1. What replaces ?",
+          matrix: [
+            [{ s: 1, r: 0, c: 0, t: 0 }, { s: 1, r: 90, c: 0, t: 0 }, { s: 1, r: 180, c: 0, t: 0 }],
+            [{ s: 1, r: 0, c: 1, t: 1 }, { s: 1, r: 90, c: 1, t: 1 }, { s: 1, r: 180, c: 1, t: 1 }],
+            [{ s: 1, r: 0, c: 2, t: 2 }, { s: 1, r: 90, c: 2, t: 2 }, null]
+          ],
+          options: [
+            { letter: "A", data: { s: 1, r: 180, c: 2, t: 2 } },
+            { letter: "B", data: { s: 1, r: 90, c: 2, t: 2 } },
+            { letter: "C", data: { s: 1, r: 180, c: 1, t: 2 } },
+            { letter: "D", data: { s: 1, r: 180, c: 2, t: 1 } },
+            { letter: "E", data: { s: 2, r: 180, c: 2, t: 2 } },
+            { letter: "F", data: { s: 1, r: 0, c: 2, t: 2 } }
+          ],
+          correct: "A",
+          explanation: "Bottom-right keeps squares=1, row 3 gives circles=2 & triangles=2, column 3 gives rotation=180°."
+        }
+      ];
+
+      window.__answers = new Array(questions.length).fill(null);
+
+      function showResult(qIndex, ok, correct, explanation) {
+        const resultEl = document.getElementById(`result-${qIndex}`);
+        resultEl.style.display = "block";
+        resultEl.innerHTML = ok
+          ? `<strong>Correct (${correct})</strong><div>${explanation}</div>`
+          : `<strong>Not quite.</strong><div>Correct answer: ${correct}. ${explanation}</div>`;
+      }
+
+      function render() {
+        const quiz = document.getElementById("quiz");
+        quiz.innerHTML = "";
+
+        questions.forEach((q, i) => {
+          const card = document.createElement("div");
+          card.className = "card";
+
+          const row = document.createElement("div");
+          row.className = "row";
+
+          const title = document.createElement("p");
+          title.className = "title";
+          title.textContent = `${q.title} — Choose the missing tile`;
+
+          const prompt = document.createElement("p");
+          prompt.className = "prompt";
+          prompt.textContent = q.prompt;
+
+          row.appendChild(title);
+          row.appendChild(prompt);
+
+          buildMatrix(row, q.matrix);
+          buildOptions(row, i, q.options);
+
+          const actions = document.createElement("div");
+          actions.className = "actions";
+
+          const checkBtn = document.createElement("button");
+          checkBtn.className = "btnPrimary";
+          checkBtn.textContent = "Check Answer";
+
+          const resetBtn = document.createElement("button");
+          resetBtn.className = "btnSecondary";
+          resetBtn.textContent = "Reset";
+
+          actions.appendChild(checkBtn);
+          actions.appendChild(resetBtn);
+          row.appendChild(actions);
+
+          const result = document.createElement("div");
+          result.className = "result";
+          result.id = `result-${i}`;
+          row.appendChild(result);
+
+          checkBtn.addEventListener("click", () => {
+            const chosen = window.__answers[i];
+            if (!chosen) {
+              showResult(i, false, q.correct, "Select an option first.");
+              return;
+            }
+            showResult(i, chosen === q.correct, q.correct, q.explanation);
+          });
+
+          resetBtn.addEventListener("click", () => {
+            window.__answers[i] = null;
+            const optWrap = card.querySelector(`.options[data-q="${i}"]`);
+            Array.from(optWrap.children).forEach((n) => n.classList.remove("selected"));
+            result.style.display = "none";
+          });
+
+          card.appendChild(row);
+          quiz.appendChild(card);
+        });
+      }
+
+      render();
+    </script>
+  </body>
+</html>
